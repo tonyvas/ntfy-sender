@@ -6,19 +6,28 @@ from datetime import datetime
 SCRIPT_DIR = os.path.abspath(os.path.dirname(sys.argv[0]))
 LOG_FILE = f'{SCRIPT_DIR}/loggers.log'
 
-NTFY_SERVER_URL='https://ntfy.sh'
+DEFAULT_NTFY_SERVER_URL = 'https://ntfy.sh'
 DEFAULT_TIMEOUT_S = 10
 
 def parse_args(args):
-    KEY_TOPIC = 'topic'
-    KEY_TITLE = 'title'
-    KEY_MESSAGE = 'message'
-    KEY_PRIORITY = 'priority'
-    KEY_TAG = 'tag'
-    KEY_TAGS = 'tags'
+    # Keys for command line
+    KEY_CLI_SERVER = '--server'
+    KEY_CLI_TOPIC = '--topic'
+    KEY_CLI_TITLE = '--title'
+    KEY_CLI_MESSAGE = '--message'
+    KEY_CLI_PRIORITY = '--priority'
+    KEY_CLI_TAGS = '--tag'
+
+    # Keys for request json body
+    KEY_REQ_TOPIC = 'topic'
+    KEY_REQ_TITLE = 'title'
+    KEY_REQ_MESSAGE = 'message'
+    KEY_REQ_PRIORITY = 'priority'
+    KEY_REQ_TAGS = 'tags'
 
     parsed = {}
     has_topic = False
+    server_url = None
 
     # Iterate over args
     for arg in args:
@@ -27,29 +36,34 @@ def parse_args(args):
         key = split[0]
         value = '='.join(split[1:])
 
-        if key == KEY_TOPIC:
-            # Topic is required
+        if key == KEY_CLI_SERVER:
+            server_url = value
+        elif key == KEY_CLI_TOPIC:
+            # Topic, required
             has_topic = True
-            parsed[key] = value
-        elif key in [ KEY_TITLE, KEY_MESSAGE ]:
-            # Regular strings
-            parsed[key] = value
-        elif key == KEY_PRIORITY:
-            # Int value
-            parsed[key] = int(value)
-        elif key == KEY_TAG:
-            # List of values
-            if KEY_TAGS not in parsed:
-                parsed[KEY_TAGS] = []
-            parsed[KEY_TAGS].append(value)
+            parsed[KEY_REQ_TOPIC] = value
+        elif key == KEY_CLI_TITLE:
+            # Title
+            parsed[KEY_REQ_TITLE] = value
+        elif key == KEY_CLI_MESSAGE:
+            # Message
+            parsed[KEY_REQ_MESSAGE] = value
+        elif key == KEY_CLI_PRIORITY:
+            # Priority, integer
+            parsed[KEY_REQ_PRIORITY] = int(value)
+        elif key == KEY_CLI_TAGS:
+            # Tags, list of values
+            if KEY_REQ_TAGS not in parsed:
+                parsed[KEY_REQ_TAGS] = []
+            parsed[KEY_REQ_TAGS].append(value)
         else:
             raise Exception(f"Key '{key}' is not a valid key! (or it hasn't been implemented yet)")
 
     # Make sure topic is present
     if not has_topic:
-        raise Exception(f"Key '{KEY_TOPIC}' is required but is missing!")
+        raise Exception(f"Key '{KEY_CLI_TOPIC}' is required but is missing!")
 
-    return parsed
+    return (server_url, parsed)
 
 def log(message):
     # Current date and time
@@ -60,10 +74,10 @@ def log(message):
     with open(LOG_FILE, 'a') as f:
         f.write(f'{date} - {message}\n')
 
-def send_json(data, timeout = DEFAULT_TIMEOUT_S):
+def send_json(data, server_url = DEFAULT_NTFY_SERVER_URL, timeout = DEFAULT_TIMEOUT_S):
     try:
         # Send POST request
-        res = requests.post(NTFY_SERVER_URL, data=json.dumps(data))
+        res = requests.post(server_url, data=json.dumps(data))
         
         # Check status
         if res.status_code != 200:
@@ -78,11 +92,17 @@ if __name__ == '__main__':
 
         # Parse CLI args
         log(f'Parsing params: "{args}"')
-        params = parse_args(args)
+        (server_url, data) = parse_args(args)
 
         # Send notification
-        log(f'Sending POST request: "{params}"')
-        send_json(params)
+        if server_url:
+            # Custom URL
+            log(f'Sending POST request to "{server_url}": "{data}"')
+            send_json(data, server_url)
+        else:
+            # Default URL
+            log(f'Sending POST request: "{data}"')
+            send_json(data)
 
         log('Success!')
     except Exception as e:
