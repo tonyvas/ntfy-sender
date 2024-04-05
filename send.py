@@ -10,12 +10,12 @@ NTFY_SERVER_URL='https://ntfy.sh'
 DEFAULT_TIMEOUT_S = 10
 
 def parse_args(args):
-    KEYS_TOPIC = 'topic'
-    KEYS_TITLE = 'title'
-    KEYS_MESSAGE = 'message'
-    KEYS_PRIORITY = 'priority'
-    KEYS_TAG = 'tag'
-    KEYS_TAGS = 'tags'
+    KEY_TOPIC = 'topic'
+    KEY_TITLE = 'title'
+    KEY_MESSAGE = 'message'
+    KEY_PRIORITY = 'priority'
+    KEY_TAG = 'tag'
+    KEY_TAGS = 'tags'
 
     parsed = {}
     has_topic = False
@@ -27,27 +27,27 @@ def parse_args(args):
         key = split[0]
         value = '='.join(split[1:])
 
-        if key == KEYS_TOPIC:
+        if key == KEY_TOPIC:
             # Topic is required
             has_topic = True
             parsed[key] = value
-        elif key in [ KEYS_TITLE, KEYS_MESSAGE ]:
+        elif key in [ KEY_TITLE, KEY_MESSAGE ]:
             # Regular strings
             parsed[key] = value
-        elif key == KEYS_PRIORITY:
+        elif key == KEY_PRIORITY:
             # Int value
             parsed[key] = int(value)
-        elif key == KEYS_TAG:
+        elif key == KEY_TAG:
             # List of values
-            if key not in parsed:
-                parsed[key] = []
-            parsed[key].append(key)
+            if KEY_TAGS not in parsed:
+                parsed[KEY_TAGS] = []
+            parsed[KEY_TAGS].append(value)
         else:
             raise Exception(f"Key '{key}' is not a valid key! (or it hasn't been implemented yet)")
 
     # Make sure topic is present
     if not has_topic:
-        raise Exception(f"Key '{KEYS_TOPIC}' is required but is missing!")
+        raise Exception(f"Key '{KEY_TOPIC}' is required but is missing!")
 
     return parsed
 
