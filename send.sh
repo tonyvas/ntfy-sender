@@ -18,15 +18,6 @@ title=${2:-"${DEFAULT_TITLE}"}
 message=${3:-"${DEFAULT_MESSAGE}"}
 priority=${4:-"${DEFAULT_PRIORITY}"}
 
-# Log message
-log_message="$(date '+%F %T')"
-log_message+=$'\n\t'"Topic:    ${topic}"
-log_message+=$'\n\t'"Title:    ${title}"
-log_message+=$'\n\t'"Message:  ${message}"
-log_message+=$'\n\t'"Priority: ${priority}"
-
-echo "${log_message}"$'\n' >> "${LOG_FILE}"
-
 # Send message
 "${NTFY_SENDER_SCRIPT}" \
     --server="${SERVER_URL}" \
@@ -34,3 +25,21 @@ echo "${log_message}"$'\n' >> "${LOG_FILE}"
     --title="${title}" \
     --message="${message}" \
     --priority=${priority}
+
+send_code=$?    # If sending was successful
+
+# Log message
+log_message=""
+
+if [[ $send_code == 0 ]]; then
+    log_message+="$(date '+%F %T')"
+else
+    log_message+="$(date '+%F %T') - FAILED TO SEND"
+fi
+
+log_message+=$'\n\t'"Topic:    ${topic}"
+log_message+=$'\n\t'"Title:    ${title}"
+log_message+=$'\n\t'"Message:  ${message}"
+log_message+=$'\n\t'"Priority: ${priority}"
+
+echo "${log_message}"$'\n' >> "${LOG_FILE}"
